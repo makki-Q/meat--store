@@ -1,0 +1,37 @@
+<<<<<<<
+  const fetchUnverifiedUsers = async () => {
+    setError(null);
+    try {
+      const response = await axios.get('/api/auth/unverified-users', {
+    inventoryChart: true,
+  });
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [userRegError, setUserRegError] = useState(null);
+  const [userRegSuccess, setUserRegSuccess] = useState(null);
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      setUsers(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch users');
+    }
+  };
+=======
+
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [userRegError, setUserRegError] = useState(null);
+  const [userRegSuccess, setUserRegSuccess] = useState(null);
+
+  const fetchUnverifiedUsers = async () => {
+    setError(null);
+    try {
+      const response = await axios.get('/api/auth/unverified-users', {
+        headers: { Authorization: `Bearer ${auth.token}` },
+        inventoryChart: true,
+      });
+      setUsers(response.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch users');
+    }
+  };
