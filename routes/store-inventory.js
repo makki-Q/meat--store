@@ -197,16 +197,18 @@ router.post('/:id/purchases', async (req, res) => {
 // Add shop transfer
 router.post('/:id/transfers', async (req, res) => {
   try {
+    const transferData = req.body;
+    
+    // Use findOneAndUpdate with atomic operations to prevent version conflicts
     const inventory = await StoreInventory.findById(req.params.id);
     if (!inventory) {
       return res.status(404).json({ message: 'Inventory not found' });
     }
 
-    // Ensure calculations are up to date
+    // Calculate current totals
     inventory.calculateTotalAvailableStock();
 
     // Validate transfer against available stock
-    const transferData = req.body;
     if (transferData.products && transferData.products.length > 0) {
       const availableStockMap = {};
       inventory.totalAvailableStock.forEach(item => {
@@ -249,14 +251,31 @@ router.post('/:id/transfers', async (req, res) => {
       });
     }
 
-    inventory.shopTransfers.push(transferData);
-    inventory.calculateRemainingStock();
+    // Use atomic update to prevent version conflicts
+    const updatedInventory = await StoreInventory.findByIdAndUpdate(
+      req.params.id,
+      {
+        $push: { shopTransfers: transferData },
+        $set: { updatedAt: new Date() }
+      },
+      { new: true }
+    );
 
-    await inventory.save();
-    res.json(inventory);
+    // Recalculate remaining stock
+    updatedInventory.calculateRemainingStock();
+    await updatedInventory.save();
+
+    res.json(updatedInventory);
   } catch (error) {
     console.error('Add transfer error:', error);
-    res.status(500).json({ message: error.message });
+    if (error.name === 'VersionError') {
+      res.status(409).json({ 
+        message: 'Concurrent update detected. Please refresh and try again.',
+        error: 'CONCURRENT_UPDATE'
+      });
+    } else {
+      res.status(500).json({ message: error.message });
+    }
   }
 });
 
