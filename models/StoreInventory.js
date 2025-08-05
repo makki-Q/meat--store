@@ -199,11 +199,75 @@ const StoreInventorySchema = new mongoose.Schema({
   }
 });
 
-// Pre-save middleware to update timestamps
-StoreInventorySchema.pre('save', function(next) {
+// Pre-save middleware to update timestamps and prevent duplicate drafts
+StoreInventorySchema.pre('save', async function(next) {
   this.updatedAt = Date.now();
+  
+  // Only check for duplicates if this is a DRAFT
+  if (this.status === 'DRAFT') {
+    try {
+      const existingFinalized = await this.constructor.findOne({
+        date: this.date,
+        status: 'FINALIZED'
+      });
+      
+      if (existingFinalized) {
+        const error = new Error(`Cannot create DRAFT entry for ${this.date.toISOString().split('T')[0]} - already has FINALIZED entry`);
+        error.code = 11000; // MongoDB duplicate key error
+        return next(error);
+      }
+    } catch (err) {
+      return next(err);
+    }
+  }
+  
   next();
 });
+
+// Static method to find duplicate dates
+StoreInventorySchema.statics.findDuplicateDates = function() {
+  return this.aggregate([
+    {
+      $group: {
+        _id: "$date",
+        entries: { $push: { _id: "$_id", status: "$status" } },
+        count: { $sum: 1 }
+      }
+    },
+    {
+      $match: {
+        count: { $gt: 1 }
+      }
+    },
+    {
+      $sort: { _id: -1 }
+    }
+  ]);
+};
+
+// Static method to cleanup duplicate drafts
+StoreInventorySchema.statics.cleanupDuplicateDrafts = async function() {
+  const duplicates = await this.findDuplicateDates();
+  let cleanedCount = 0;
+  
+  for (const duplicate of duplicates) {
+    const hasFinalized = duplicate.entries.some(e => e.status === 'FINALIZED');
+    
+    if (hasFinalized) {
+      // Remove all DRAFT entries for this date
+      const draftIds = duplicate.entries
+        .filter(e => e.status === 'DRAFT')
+        .map(e => e._id);
+      
+      if (draftIds.length > 0) {
+        const result = await this.deleteMany({ _id: { $in: draftIds } });
+        cleanedCount += result.deletedCount;
+      }
+    }
+  }
+  
+  return cleanedCount;
+};
 
 // Method to calculate total available stock
 StoreInventorySchema.methods.calculateTotalAvailableStock = function() {
