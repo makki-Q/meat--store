@@ -6,13 +6,18 @@ const { authMiddleware, adminMiddleware } = require('../middleware/auth');
 // Get or create store inventory for a specific date
 router.get('/date/:date', async (req, res) => {
   try {
-    const inventoryDate = new Date(req.params.date);
-    inventoryDate.setHours(0, 0, 0, 0);
-    let inventory = await StoreInventory.findOne({ date: inventoryDate });
+    const start = new Date(req.params.date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 1);
+
+    let inventory = await StoreInventory.findOne({
+      date: { $gte: start, $lt: end }
+    });
 
     if (!inventory) {
       // Get previous day's final stock as opening stock
-      const previousDay = new Date(inventoryDate);
+      const previousDay = new Date(start);
       previousDay.setDate(previousDay.getDate() - 1);
 
       const previousInventory = await StoreInventory.findOne({ date: previousDay });
@@ -31,7 +36,7 @@ router.get('/date/:date', async (req, res) => {
 
       // Create new inventory for this date
       inventory = new StoreInventory({
-        date: inventoryDate,
+        date: start,
         openingStock: openingStock,
         dailyPurchases: [],
         shopTransfers: [],
