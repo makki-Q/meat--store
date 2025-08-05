@@ -19,8 +19,13 @@ router.get('/date/:date', async (req, res) => {
       // Get previous day's final stock as opening stock
       const previousDay = new Date(start);
       previousDay.setDate(previousDay.getDate() - 1);
+      previousDay.setHours(0, 0, 0, 0);
+      const prevDayEnd = new Date(previousDay);
+      prevDayEnd.setDate(prevDayEnd.getDate() + 1);
 
-      const previousInventory = await StoreInventory.findOne({ date: previousDay });
+      const previousInventory = await StoreInventory.findOne({
+        date: { $gte: previousDay, $lt: prevDayEnd }
+      });
 
       // Transform final stock to opening stock format (reset pricing info)
       const openingStock = (previousInventory?.finalStock || []).map(item => ({
@@ -60,16 +65,21 @@ router.get('/date/:date', async (req, res) => {
 router.get('/today', async (req, res) => {
   try {
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setHours(23, 59, 59, 999);
     
-    let inventory = await StoreInventory.findOne({ date: today });
+    let inventory = await StoreInventory.findOne({ date: { $gte: start, $lt: end } });
     
     if (!inventory) {
       // Get yesterday's final stock as today's opening stock
-      const yesterday = new Date(today);
+      const yesterday = new Date(start);
       yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayEnd = new Date(yesterday);
+      yesterdayEnd.setHours(23, 59, 59, 999);
 
-      const yesterdayInventory = await StoreInventory.findOne({ date: yesterday });
+      const yesterdayInventory = await StoreInventory.findOne({ date: { $gte: yesterday, $lt: yesterdayEnd } });
 
       // Transform final stock to opening stock format (reset pricing info)
       const openingStock = (yesterdayInventory?.finalStock || []).map(item => ({
@@ -273,8 +283,10 @@ async function updateNextDayOpeningStock(previousInventory) {
   const nextDay = new Date(previousInventory.date);
   nextDay.setDate(nextDay.getDate() + 1);
   nextDay.setHours(0, 0, 0, 0);
+  const nextDayEnd = new Date(nextDay);
+  nextDayEnd.setHours(23, 59, 59, 999);
 
-  let nextDayInventory = await StoreInventory.findOne({ date: nextDay });
+  let nextDayInventory = await StoreInventory.findOne({ date: { $gte: nextDay, $lt: nextDayEnd } });
   if (nextDayInventory) {
     // Update opening stock from previous day's final stock
     nextDayInventory.openingStock = (previousInventory.finalStock || []).map(item => ({
@@ -566,8 +578,13 @@ router.get('/stats/summary', async (req, res) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const todayInventory = await StoreInventory.findOne({ date: today });
-    
+    const start = new Date(today);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(today);
+    end.setHours(23, 59, 59, 999);
+
+    const todayInventory = await StoreInventory.findOne({ date: { $gte: start, $lt: end } });
+
     const stats = {
       todayStatus: todayInventory?.status || 'NOT_STARTED',
       totalPurchases: todayInventory?.dailyPurchases.length || 0,
