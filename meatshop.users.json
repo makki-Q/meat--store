@@ -1,0 +1,51 @@
+[{
+  "_id": {
+    "$oid": "6887d98352a5cfddf844ab73"
+  },
+  "username": "umer",
+  "password": "$2b$10$PIqpc.Pae3SwjvETPn8mUOoaeYYXd0bL.zJ8PPXWMiunsrbeqbjaS",
+  "role": "storekeeper",
+  "verified": true,
+  "disabled": false,
+  "createdAt": {
+    "$date": "2025-07-28T20:11:47.395Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-30T21:41:59.371Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "6888fe508a735be07bdf68c0"
+  },
+  "username": "makki",
+  "password": "$2b$10$jb/0IUcs/jBsrxo4gflyOuY3X1qJH/osQAbMASZ1dZdU7cpslauQS",
+  "role": "storekeeper",
+  "verified": false,
+  "disabled": true,
+  "createdAt": {
+    "$date": "2025-07-29T17:01:04.322Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-29T18:37:36.494Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "688a9167e4097fa6f8b13b3f"
+  },
+  "username": "wajid",
+  "password": "$2b$10$14fwRqvNivdCtjlzHtt8tesy2zU7ImgynGzdMw6YWKv0/.1rXUMUC",
+  "role": "storekeeper",
+  "verified": true,
+  "disabled": false,
+  "createdAt": {
+    "$date": "2025-07-30T21:40:55.220Z"
+  },
+  "updatedAt": {
+    "$date": "2025-07-30T21:41:06.232Z"
+  },
+  "__v": 0
+}]
